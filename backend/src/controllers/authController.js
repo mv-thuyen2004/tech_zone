@@ -23,6 +23,9 @@ const registerUser = async (req, res) => {
         _id: user._id,
         fullName: user.fullName,
         email: user.email,
+        phone: user.phone,     // <--- Thêm dòng này
+        address: user.address,
+        role: user.role,
         token: generateToken(user._id),
       });
     } else {
@@ -46,6 +49,8 @@ const loginUser = async (req, res) => {
         _id: user._id,
         fullName: user.fullName,
         email: user.email,
+        phone: user.phone,    
+        address: user.address, 
         role: user.role,
         token: generateToken(user._id),
       });

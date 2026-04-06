@@ -134,9 +134,11 @@ export default function CartPage() {
                 <span className="font-extrabold text-2xl text-red-600">{totalPrice.toLocaleString('vi-VN')}đ</span>
               </div>
               
-              <Button className="w-full h-14 text-base rounded-xl bg-primary hover:bg-primary/90">
-                Tiến hành thanh toán <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              <Link href="/checkout">
+                <Button className="w-full h-14 text-base rounded-xl bg-primary hover:bg-primary/90 mt-6">
+                  Tiến hành thanh toán <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

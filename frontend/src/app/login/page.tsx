@@ -50,7 +50,9 @@ export default function LoginPage() {
         _id: data._id,
         fullName: data.fullName,
         email: data.email,
-        role: data.role
+        role: data.role,
+        phone: data.phone,
+        address: data.address
       };
 
       // 1. Lưu vào Zustand (Truyền object vừa đóng gói và token)

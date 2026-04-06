@@ -6,6 +6,8 @@ const authRoutes = require('./src/routes/authRoutes');
 const productRoutes = require('./src/routes/productRoutes');
 const cartRoutes = require('./src/routes/cartRoutes'); 
 const uploadRoutes = require('./src/routes/uploadRoutes'); // Route mới cho upload ảnh
+const orderRoutes = require('./src/routes/orderRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
 
 // Load biến môi trường từ file .env
 dotenv.config();
@@ -29,7 +31,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/upload', uploadRoutes); // Route cho upload ảnh
-
+app.use('/api/orders', orderRoutes); // Route cho quản lý đơn hàng
+app.use('/api/admin', adminRoutes); // Route cho dashboard admin
 
 const PORT = process.env.PORT || 5000;
 

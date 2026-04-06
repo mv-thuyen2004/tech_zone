@@ -119,6 +119,28 @@ export default function RegisterPage() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Số điện thoại</label>
+              <Input 
+                name="phone"
+                type="tel" 
+                placeholder="0988.xxx.xxx" 
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            {/* THÊM KHỐI ĐỊA CHỈ */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Địa chỉ giao hàng</label>
+              <Input 
+                name="address"
+                type="text" 
+                placeholder="Số nhà, đường, quận/huyện..." 
+                onChange={handleChange}
+                required
+              />
+            </div>
 
             <Button type="submit" className="w-full text-base h-11" disabled={loading}>
               {loading ? "Đang xử lý..." : "Tạo tài khoản"}
