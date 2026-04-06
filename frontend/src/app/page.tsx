@@ -1,14 +1,18 @@
 import ProductCard from "@/components/product/ProductCard";
 import CategoryFilter from "@/components/product/CategoryFilter";
-import PaginationControl from "@/components/product/PaginationControl"; // Import component mới
+import SortAndPriceFilter from "@/components/product/SortAndPriceFilter"; // Import component mới
+import PaginationControl from "@/components/product/PaginationControl"; 
 
-// Nhận thêm tham số page
-async function getProducts(keyword?: string, category?: string, page?: string) {
+// Thêm tham số minPrice, maxPrice, sort
+async function getProducts(keyword?: string, category?: string, page?: string, minPrice?: string, maxPrice?: string, sort?: string) {
   const params = new URLSearchParams();
   
   if (keyword) params.append("keyword", keyword);
   if (category) params.append("category", category);
-  if (page) params.append("page", page); // Gắn page vào request
+  if (page) params.append("page", page); 
+  if (minPrice) params.append("minPrice", minPrice);
+  if (maxPrice) params.append("maxPrice", maxPrice);
+  if (sort) params.append("sort", sort);
 
   const url = `${process.env.NEXT_PUBLIC_API_URL}/products${params.toString() ? `?${params.toString()}` : ""}`;
   const res = await fetch(url, { cache: 'no-store' });
@@ -20,22 +24,20 @@ async function getProducts(keyword?: string, category?: string, page?: string) {
 export default async function HomePage({ 
   searchParams 
 }: { 
-  searchParams: Promise<{ keyword?: string; category?: string; page?: string }> 
+  searchParams: Promise<{ keyword?: string; category?: string; page?: string; minPrice?: string; maxPrice?: string; sort?: string }> 
 }) {
   const resolvedParams = await searchParams;
-  const keyword = resolvedParams.keyword;
-  const category = resolvedParams.category;
-  const page = resolvedParams.page; // Lấy page từ URL
+  // Lấy hết các param từ URL ra
+  const { keyword, category, page, minPrice, maxPrice, sort } = resolvedParams;
   
-  // Dữ liệu giờ là một Object
-  const data = await getProducts(keyword, category, page);
-  const products = data.products || []; // Trích xuất mảng products
+  const data = await getProducts(keyword, category, page, minPrice, maxPrice, sort);
+  const products = data.products || []; 
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Ẩn Banner nếu người dùng đang tìm kiếm hoặc đang lọc danh mục */}
-      {  (
-        <div className="bg-primary/10 rounded-2xl p-8 md:p-12 flex flex-col items-center text-center">
+      {(!keyword && !category && !minPrice && !maxPrice) && (
+        <div className="bg-primary/10 rounded-2xl p-8 md:p-12 flex flex-col items-center text-center mb-8">
           <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
             Phụ Kiện Điện Thoại <span className="text-primary">Chính Hãng</span>
           </h1>
@@ -47,28 +49,34 @@ export default async function HomePage({
 
       {/* Vùng danh sách sản phẩm */}
       <div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-          <h2 className="text-2xl font-bold">
-            {keyword ? `Kết quả tìm kiếm cho: "${keyword}"` : (category ? `Danh mục: ${category}` : "Sản phẩm mới nhất")}
-          </h2>
-          <CategoryFilter />
+        <div className="flex flex-col mb-2">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 className="text-2xl font-bold">
+              {keyword ? `Tìm kiếm: "${keyword}"` : (category ? `Danh mục: ${category}` : "Tất cả sản phẩm")}
+            </h2>
+            <CategoryFilter />
+          </div>
+          
+          {/* Nhúng thanh Lọc Giá và Sắp Xếp vào đây */}
+          <SortAndPriceFilter />
         </div>
         
         {products.length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-lg text-muted-foreground mb-4">Rất tiếc, không tìm thấy sản phẩm nào phù hợp.</p>
+          <div className="py-20 text-center bg-slate-50 border-2 border-dashed rounded-2xl">
+            <p className="text-lg font-medium text-slate-700 mb-2">Không có sản phẩm nào phù hợp</p>
+            <p className="text-sm text-slate-500">Thử thay đổi mức giá hoặc danh mục để tìm thấy sản phẩm bạn cần nhé.</p>
           </div>
         ) : (
           <>
-            {/* Lặp mảng products thay vì biến data */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {products.map((product: any) => (
                 <ProductCard key={product._id} product={product} />
               ))}
             </div>
 
-            {/* NHÚNG NÚT PHÂN TRANG VÀO ĐÂY */}
-            <PaginationControl page={data.page} pages={data.pages} />
+            <div className="mt-8">
+              <PaginationControl page={data.page} pages={data.pages} />
+            </div>
           </>
         )}
       </div>

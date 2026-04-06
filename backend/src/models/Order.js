@@ -21,7 +21,7 @@ const orderSchema = new mongoose.Schema({
   },
   totalPrice: { type: Number, required: true },
   paymentMethod: { type: String, enum: ['COD', 'VNPAY'], default: 'COD' },
-  status: { type: String, enum: ['Chờ xác nhận', 'Đang giao hàng', 'Đã giao thành công', 'Đã hủy'], default: 'Chờ xác nhận' }
+  status: { type: String, enum: ['Chờ xác nhận', 'Chờ thanh toán', 'Đang giao hàng', 'Đã giao thành công', 'Đã hủy'], default: 'Chờ xác nhận' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);

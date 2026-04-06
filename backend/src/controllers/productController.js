@@ -30,16 +30,32 @@ const getProducts = async (req, res) => {
 
     // 3. Lọc theo danh mục (nếu người dùng bấm các nút Category trên giao diện)
     const categoryFilter = req.query.category ? { category: req.query.category } : {};
+
+    // --- 1. LỌC THEO MỨC GIÁ ---
+    let priceFilter = {};
+    if (req.query.minPrice || req.query.maxPrice) {
+      priceFilter.price = {};
+      if (req.query.minPrice) priceFilter.price.$gte = Number(req.query.minPrice);
+      if (req.query.maxPrice) priceFilter.price.$lte = Number(req.query.maxPrice);
+    }
     
     // Gộp chung bộ lọc tìm kiếm và bộ lọc danh mục
-    const query = { ...keywordQuery, ...categoryFilter };
+    const query = { ...keywordQuery, ...categoryFilter, ...priceFilter };
 
     // 4. Đếm tổng số sản phẩm thỏa mãn điều kiện
     const count = await Product.countDocuments(query);
 
+    // --- 2. XỬ LÝ SẮP XẾP (SORT) ---
+    let sortCondition = { createdAt: -1 }; // Mặc định: Mới nhất
+    if (req.query.sort === 'price_asc') {
+      sortCondition = { price: 1 }; // Giá: Thấp đến Cao
+    } else if (req.query.sort === 'price_desc') {
+      sortCondition = { price: -1 }; // Giá: Cao đến Thấp
+    }
+
     // 5. Lấy dữ liệu theo trang
     const products = await Product.find(query)
-      .sort({ createdAt: -1 })
+      .sort(sortCondition)
       .limit(pageSize)
       .skip(pageSize * (page - 1));
 
@@ -201,5 +217,19 @@ const createProductReview = async (req, res) => {
   }
 };
 
+// LẤY CHI TIẾT SẢN PHẨM BẰNG ID (Dành cho Admin Edit)
+const getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
 
-module.exports = { getProducts, getProductBySlug, createProduct , deleteProduct, updateProduct, getRecommendedProducts, createProductReview};
+    if (product) {
+      res.json(product);
+    } else {
+      res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { getProducts, getProductBySlug, createProduct , deleteProduct, updateProduct, getRecommendedProducts, createProductReview, getProductById};

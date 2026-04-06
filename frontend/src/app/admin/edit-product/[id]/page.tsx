@@ -31,7 +31,7 @@ export default function EditProductPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${productId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/id/${productId}`);
         if (!res.ok) throw new Error("Không tìm thấy sản phẩm");
         const data = await res.json();
         

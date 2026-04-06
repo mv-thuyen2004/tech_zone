@@ -51,7 +51,8 @@ const createOrder = async (req, res) => {
       items,
       shippingInfo,
       totalPrice,
-      paymentMethod: paymentMethod || 'COD'
+      paymentMethod,
+      status: paymentMethod === 'VNPAY' ? 'Chờ thanh toán' : 'Chờ xác nhận'
     });
 
     const createdOrder = await order.save();
@@ -177,7 +178,6 @@ const createPaymentUrl = async (req, res) => {
 const vnpayReturn = async (req, res) => {
   try {
     let vnp_Params = req.body;
-
     let secureHash = vnp_Params['vnp_SecureHash'];
     delete vnp_Params['vnp_SecureHash'];
     delete vnp_Params['vnp_SecureHashType'];
@@ -185,7 +185,6 @@ const vnpayReturn = async (req, res) => {
     vnp_Params = sortObject(vnp_Params);
     let secretKey = process.env.VNP_HASHSECRET;
 
-    // TỰ TAY NỐI CHUỖI ĐỂ TẠO CHỮ KÝ XÁC THỰC
     let signData = "";
     for (let key in vnp_Params) {
         if (vnp_Params.hasOwnProperty(key)) {
@@ -199,27 +198,33 @@ const vnpayReturn = async (req, res) => {
     let hmac = crypto.createHmac("sha512", secretKey);
     let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
 
-    // KIỂM TRA CHỮ KÝ
     if (secureHash === signed) {
+      const orderId = vnp_Params['vnp_TxnRef'];
+      const order = await Order.findById(orderId);
+
+      if (!order) {
+        return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+      }
+
       if (vnp_Params['vnp_ResponseCode'] === '00') {
-        const orderId = vnp_Params['vnp_TxnRef'];
-        const order = await Order.findById(orderId);
-        if (order) {
-          order.isPaid = true;
-          order.paidAt = Date.now();
-          order.status = 'Chờ xác nhận'; 
-          await order.save();
-          return res.status(200).json({ message: 'Giao dịch thành công' });
-        }
+        // THANH TOÁN THÀNH CÔNG
+        order.isPaid = true;
+        order.paidAt = Date.now();
+        order.status = 'Chờ xác nhận'; 
+        await order.save();
+        return res.status(200).json({ message: 'Giao dịch thành công' });
       } else {
+        // THANH TOÁN THẤT BẠI HOẶC BỊ HỦY
+        // SỬA Ở ĐÂY: Cập nhật trạng thái để Admin biết đơn này đã hỏng
+        order.status = 'Đã hủy'; 
+        await order.save();
         return res.status(400).json({ message: 'Giao dịch bị hủy hoặc thất bại' });
       }
     } else {
-      return res.status(400).json({ message: 'Chữ ký không hợp lệ (Dữ liệu bị giả mạo)' });
+      return res.status(400).json({ message: 'Chữ ký không hợp lệ' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
 module.exports = { createOrder , getMyOrders, createPaymentUrl, vnpayReturn };
