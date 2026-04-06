@@ -1,3 +1,4 @@
+import RecommendedProducts from "@/components/product/RecommendedProducts";
 import { Badge } from "@/components/ui/badge";
 import AddToCartDetail from "@/components/product/AddToCartDetail";
 import { notFound } from "next/navigation";
@@ -36,10 +37,7 @@ export default async function ProductDetailPage({
 
   return (
     <div className="max-w-6xl mx-auto py-8">
-      <Link href="/" className="inline-flex items-center text-muted-foreground hover:text-primary mb-8 transition-colors">
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Quay lại trang chủ
-      </Link>
+      
 
       <div className="grid md:grid-cols-2 gap-12">
         {/* Cột trái: Hình ảnh */}
@@ -89,6 +87,12 @@ export default async function ProductDetailPage({
           </div>
         </div>
       </div>
+              <div className="h-6" />
+            <div className="pt-24  mt-20"> 
+        <RecommendedProducts productId={product._id} />
+      </div>
+
     </div>
+    
   );
 }

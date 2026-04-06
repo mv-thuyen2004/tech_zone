@@ -10,7 +10,9 @@ import { useEffect, useState } from "react";
 export default function CartPage() {
   // Kỹ thuật tránh lỗi Hydration của Next.js
   const [isMounted, setIsMounted] = useState(false);
-  const { items, addItem, decreaseItem, removeItem } = useCart();
+  const { carts, currentUserId, addItem, decreaseItem, removeItem } = useCart();
+  // Trích xuất mảng sản phẩm tương ứng với ID hiện tại
+  const items = currentUserId ? (carts[currentUserId] || []) : [];
 
   useEffect(() => {
     setIsMounted(true);

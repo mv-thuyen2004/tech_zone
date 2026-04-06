@@ -10,49 +10,73 @@ interface CartItem {
 }
 
 interface CartStore {
-  items: CartItem[];
+  // Lưu giỏ hàng dạng: { "id_user_A": [...], "id_user_B": [...] }
+  carts: Record<string, CartItem[]>; 
+  currentUserId: string | null;
+
+  setCurrentUser: (userId: string | null) => void;
   addItem: (product: any) => void;
-  decreaseItem: (id: string) => void; // Hàm mới
+  decreaseItem: (id: string) => void;
   removeItem: (id: string) => void;
-  clearCart: () => void;
+  clearCart: () => void; // Dùng khi thanh toán xong
 }
 
 export const useCart = create<CartStore>()(
   persist(
-    (set) => ({
-      items: [],
-      // Tăng số lượng hoặc thêm mới
+    (set, get) => ({
+      carts: {},
+      currentUserId: null,
+
+      // Hàm để gán chìa khóa (ID)
+      setCurrentUser: (userId) => set({ currentUserId: userId }),
+
       addItem: (product) => set((state) => {
-        const existingItem = state.items.find((item) => item._id === product._id);
+        if (!state.currentUserId) return state; // Phải có chìa khóa mới cho thao tác
+        const userCart = state.carts[state.currentUserId] || [];
+        const existingItem = userCart.find((item) => item._id === product._id);
+
+        let updatedCart;
         if (existingItem) {
-          return {
-            items: state.items.map((item) =>
-              item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-            ),
-          };
+          updatedCart = userCart.map((item) =>
+            item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
+          );
+        } else {
+          updatedCart = [...userCart, { ...product, quantity: 1, image: product.images?.[0] }];
         }
-        // Lưu ý: Lấy ảnh đầu tiên trong mảng images để hiển thị
-        return { items: [...state.items, { ...product, quantity: 1, image: product.images?.[0] }] };
+        return { carts: { ...state.carts, [state.currentUserId]: updatedCart } };
       }),
-      // Giảm số lượng (Nếu = 1 mà trừ tiếp thì xóa luôn)
+
       decreaseItem: (id) => set((state) => {
-        const existingItem = state.items.find((item) => item._id === id);
+        if (!state.currentUserId) return state;
+        const userCart = state.carts[state.currentUserId] || [];
+        const existingItem = userCart.find((item) => item._id === id);
+
+        let updatedCart;
         if (existingItem?.quantity === 1) {
-          return { items: state.items.filter((item) => item._id !== id) };
-        }
-        return {
-          items: state.items.map((item) =>
+          updatedCart = userCart.filter((item) => item._id !== id);
+        } else {
+          updatedCart = userCart.map((item) =>
             item._id === id ? { ...item, quantity: item.quantity - 1 } : item
-          ),
+          );
+        }
+        return { carts: { ...state.carts, [state.currentUserId]: updatedCart } };
+      }),
+
+      removeItem: (id) => set((state) => {
+        if (!state.currentUserId) return state;
+        const userCart = state.carts[state.currentUserId] || [];
+        return {
+          carts: { ...state.carts, [state.currentUserId]: userCart.filter((item) => item._id !== id) },
         };
       }),
-      // Xóa hẳn sản phẩm khỏi giỏ
-      removeItem: (id) => set((state) => ({
-        items: state.items.filter((item) => item._id !== id),
-      })),
-      // Xóa sạch giỏ hàng (Dùng khi thanh toán xong)
-      clearCart: () => set({ items: [] }),
+
+      clearCart: () => set((state) => {
+        if (!state.currentUserId) return state;
+        return {
+          carts: { ...state.carts, [state.currentUserId]: [] },
+        };
+      }),
     }),
-    { name: 'techzone-cart' } // Tên key lưu trong LocalStorage
+    { name: 'techzone-carts-by-user' } // Đổi tên key để reset sạch cache cũ đang bị sai
   )
 );

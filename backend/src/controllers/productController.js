@@ -1,18 +1,55 @@
 const Product = require('../models/Product');
 
-// LẤY DANH SÁCH SẢN PHẨM (Có search và filter)
+// LẤY DANH SÁCH SẢN PHẨM (Nâng cấp Search thông minh + Phân trang + Lọc)
 const getProducts = async (req, res) => {
   try {
-    // Nếu người dùng search tên sản phẩm
-    const keyword = req.query.keyword
-      ? { name: { $regex: req.query.keyword, $options: 'i' } }
-      : {};
+    // 1. Cấu hình phân trang
+    const pageSize = 10;
+    const page = Number(req.query.page) || 1;
 
-    // Nếu người dùng filter theo category (vd: ?category=Ốp lưng)
+    // 2. Logic tìm kiếm NÂNG CAO (Multi-word & Multi-field)
+    let keywordQuery = {};
+    if (req.query.keyword) {
+      // Tách chuỗi người dùng nhập thành các từ riêng lẻ (loại bỏ khoảng trắng thừa)
+      // Ví dụ: "sạc iphone" -> ["sạc", "iphone"]
+      const searchWords = req.query.keyword.trim().split(/\s+/);
+
+      // Tạo mảng điều kiện: Sản phẩm phải chứa TẤT CẢ các từ khóa ($and)
+      const andConditions = searchWords.map((word) => ({
+        // Mỗi từ khóa có thể nằm ở 1 trong 4 trường này ($or)
+        $or: [
+          { name: { $regex: word, $options: 'i' } },              // Tìm trong tên
+          { category: { $regex: word, $options: 'i' } },          // Tìm trong danh mục
+          { compatibleModels: { $regex: word, $options: 'i' } },  // Tìm trong mảng thiết bị hỗ trợ
+          { tags: { $regex: word, $options: 'i' } }               // Tìm trong tags
+        ]
+      }));
+
+      keywordQuery = { $and: andConditions };
+    }
+
+    // 3. Lọc theo danh mục (nếu người dùng bấm các nút Category trên giao diện)
     const categoryFilter = req.query.category ? { category: req.query.category } : {};
+    
+    // Gộp chung bộ lọc tìm kiếm và bộ lọc danh mục
+    const query = { ...keywordQuery, ...categoryFilter };
 
-    const products = await Product.find({ ...keyword, ...categoryFilter }).sort({ createdAt: -1 }); // Sắp xếp mới nhất lên đầu
-    res.json(products);
+    // 4. Đếm tổng số sản phẩm thỏa mãn điều kiện
+    const count = await Product.countDocuments(query);
+
+    // 5. Lấy dữ liệu theo trang
+    const products = await Product.find(query)
+      .sort({ createdAt: -1 })
+      .limit(pageSize)
+      .skip(pageSize * (page - 1));
+
+    // 6. Trả về kết quả
+    res.json({
+      products,
+      page,
+      pages: Math.ceil(count / pageSize),
+      totalProducts: count
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -100,5 +137,28 @@ const updateProduct = async (req, res) => {
   }
 };
 
+// LẤY DANH SÁCH SẢN PHẨM GỢI Ý (Cross-selling)
+const getRecommendedProducts = async (req, res) => {
+  try {
+    // 1. Lấy thông tin sản phẩm hiện tại
+    const currentProduct = await Product.findById(req.params.productId);
+    
+    if (!currentProduct) {
+      return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+    }
 
-module.exports = { getProducts, getProductBySlug, createProduct , deleteProduct, updateProduct};
+    // 2. Thuật toán tìm kiếm
+    const recommendations = await Product.find({
+      _id: { $ne: currentProduct._id }, // Loại trừ chính nó
+      category: { $ne: currentProduct.category }, // Khác danh mục (Cross-sell)
+      compatibleModels: { $in: currentProduct.compatibleModels } // Có chung ít nhất 1 dòng máy hỗ trợ
+    }).limit(4); // Lấy tối đa 4 sản phẩm gợi ý
+
+    res.json(recommendations);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+module.exports = { getProducts, getProductBySlug, createProduct , deleteProduct, updateProduct, getRecommendedProducts};

@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useCart } from './useCart'; // NHÚNG THÊM DÒNG NÀY
 
 interface User {
   _id: string;
   fullName: string;
   email: string;
-  role: string; // 'user' hoặc 'admin'
+  role: string;
 }
 
 interface AuthStore {
@@ -22,9 +23,17 @@ export const useAuth = create<AuthStore>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      login: (user, token) => set({ user, token, isAuthenticated: true }),
-      logout: () => set({ user: null, token: null, isAuthenticated: false }),
+      login: (user, token) => {
+        // Vừa login xong là lấy ID gán sang làm chìa khóa cho Giỏ hàng
+        useCart.getState().setCurrentUser(user._id); 
+        set({ user, token, isAuthenticated: true });
+      },
+      logout: () => {
+        // Vừa logout là rút chìa khóa giỏ hàng ra ngay
+        useCart.getState().setCurrentUser(null); 
+        set({ user: null, token: null, isAuthenticated: false });
+      },
     }),
-    { name: 'techzone-auth' } // Lưu token vào LocalStorage
+    { name: 'techzone-auth' }
   )
 );

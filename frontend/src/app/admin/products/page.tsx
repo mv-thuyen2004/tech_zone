@@ -15,12 +15,16 @@ export default function InventoryPage() {
   const { token } = useAuth(); // Lấy token để lấy quyền xóa
 
   // Hàm tải danh sách sản phẩm
-  const fetchProducts = async () => {
+ const fetchProducts = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`);
+      // Vì là admin, ta truyền thêm page=1 và cho pageSize thật to (hoặc bạn có thể tự code thêm phân trang cho admin sau)
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products?page=1`);
       const data = await res.json();
-      // Sắp xếp mới nhất lên đầu luôn cho tiện
-      const sorted = data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      // SỬA Ở ĐÂY: Lấy mảng từ thuộc tính data.products
+      const productsArray = data.products || []; 
+      
+      const sorted = productsArray.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setProducts(sorted);
     } catch (error) {
       console.error("Lỗi tải sản phẩm:", error);

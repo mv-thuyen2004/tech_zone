@@ -41,7 +41,7 @@ export default function ProductCard({ product }: ProductProps) {
           {product.price.toLocaleString('vi-VN')}đ
         </p>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-4 pt-0 border-none bg-white/80">
         <Button 
             onClick={() => addItem(product)} // Bấm cái là bay vào giỏ!
             className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl"
