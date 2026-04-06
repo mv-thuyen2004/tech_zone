@@ -1,6 +1,8 @@
 "use client";
 
 import { useCart } from "@/store/useCart";
+import { useAuth } from "@/store/useAuth"; 
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react";
@@ -11,6 +13,19 @@ export default function CartPage() {
   // Kỹ thuật tránh lỗi Hydration của Next.js
   const [isMounted, setIsMounted] = useState(false);
   const { carts, currentUserId, addItem, decreaseItem, removeItem } = useCart();
+
+  const { isAuthenticated } = useAuth(); // Thêm dòng này
+  const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+    // Nếu đã mount xong mà thấy chưa đăng nhập thì đuổi ra ngoài ngay
+    if (isMounted && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isMounted, isAuthenticated, router]);
+
+  
   // Trích xuất mảng sản phẩm tương ứng với ID hiện tại
   const items = currentUserId ? (carts[currentUserId] || []) : [];
 

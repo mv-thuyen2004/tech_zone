@@ -11,7 +11,11 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation"; // Thêm useRouter
 
 export default function Navbar() {
-  const items = useCart((state) => state.currentUserId ? (state.carts[state.currentUserId] || []) : []);
+  // 1. Chỉ lấy dữ liệu từ Zustand, nếu không có thì trả về undefined (không tạo mảng mới ở đây)
+  const userCart = useCart((state) => state.currentUserId ? state.carts[state.currentUserId] : undefined);
+
+  // 2. Gán mảng rỗng ở ngoài Component để an toàn tuyệt đối
+  const items = userCart || [];
   const { user, isAuthenticated, logout } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
   
@@ -35,6 +39,14 @@ export default function Navbar() {
       router.push(`/?keyword=${encodeURIComponent(keyword.trim())}`);
     } else {
       router.push("/");
+    }
+  };
+
+  const handleCartClick = () => {
+    if (!isAuthenticated) {
+      router.push("/login");
+    } else {
+      router.push("/cart");
     }
   };
 
@@ -85,16 +97,19 @@ export default function Navbar() {
             )
           )}
           
-          <Link href="/cart">
-            <Button variant="outline" size="icon" className="relative border-none shadow-none">
-              <ShoppingCart className="h-6 w-6" />
-              {isMounted && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {totalItems}
-                </span>
-              )}
-            </Button>
-          </Link>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="relative border-none shadow-none"
+            onClick={handleCartClick} // Thêm sự kiện click kiểm tra auth
+          >
+          <ShoppingCart className="h-6 w-6" />
+            {isMounted && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+            {totalItems}
+          </span>
+          )}
+          </Button>
         </div>
       </div>
     </nav>

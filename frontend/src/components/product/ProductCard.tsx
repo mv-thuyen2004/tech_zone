@@ -3,7 +3,9 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useCart } from "@/store/useCart"; // Import cái store vừa tạo
+import { useCart } from "@/store/useCart"; 
+import { useAuth } from "@/store/useAuth"; 
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface ProductProps {
@@ -20,6 +22,17 @@ interface ProductProps {
 
 export default function ProductCard({ product }: ProductProps) {
     const addItem = useCart((state) => state.addItem); // Lấy hàm addItem từ store
+    const { isAuthenticated } = useAuth(); // Lấy trạng thái đăng nhập
+    const router = useRouter(); // Khởi tạo router
+
+    const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault(); // Ngăn việc bị chuyển trang nếu nút nằm trong thẻ Link
+    if (!isAuthenticated) {
+      router.push("/login"); // Đẩy sang trang login nếu chưa đăng nhập
+      return;
+    }
+    addItem(product);
+  };
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all group border-none bg-card">
       <Link href={`/product/${product.slug}`}>
@@ -43,7 +56,7 @@ export default function ProductCard({ product }: ProductProps) {
       </CardContent>
       <CardFooter className="p-4 pt-0 border-none bg-white/80">
         <Button 
-            onClick={() => addItem(product)} // Bấm cái là bay vào giỏ!
+            onClick={handleAddToCart} // Bấm cái là bay vào giỏ!
             className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl"
         >
         Thêm vào giỏ
