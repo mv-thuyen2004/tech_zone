@@ -25,6 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Dashboard" },
     { href: "/admin/add-product", icon: <PlusCircle className="h-5 w-5" />, label: "Thêm sản phẩm" },
     { href: "/admin/products", icon: <Package className="h-5 w-5" />, label: "Quản lý kho" },
+    { href: "/admin/orders", icon: <Package className="h-5 w-5" />, label: "Quản lý đơn hàng" },
   ];
 
   return (

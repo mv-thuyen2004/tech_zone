@@ -2,30 +2,79 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const Order = require('../models/Order');
 
+// HÀM 1: LẤY THỐNG KÊ DASHBOARD
 const getDashboardStats = async (req, res) => {
   try {
-    // Đếm tổng số sản phẩm
     const totalProducts = await Product.countDocuments();
-    
-    // Đếm tổng số khách hàng (những người có role là 'user')
     const totalUsers = await User.countDocuments({ role: 'user' });
     
-    // Đếm tổng số đơn hàng
-    const totalOrders = await Order.countDocuments();
+    // --- SỬA Ở ĐÂY: Chỉ đếm các đơn khác trạng thái 'Đã hủy' ---
+    const totalOrders = await Order.countDocuments({ status: { $ne: 'Đã hủy' } });
     
-    // Tính tổng doanh thu (Cộng dồn tất cả các đơn)
-    const orders = await Order.find();
-    const totalRevenue = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+    // --- SỬA Ở ĐÂY: Chỉ tính tiền các đơn hợp lệ ---
+    const validOrders = await Order.find({ status: { $ne: 'Đã hủy' } });
+    const totalRevenue = validOrders.reduce((sum, order) => sum + order.totalPrice, 0);
 
-    res.json({
-      totalProducts,
-      totalUsers,
-      totalOrders,
-      totalRevenue
-    });
+    // Dữ liệu biểu đồ (Giữ nguyên)
+    const productsByCategory = await Product.aggregate([
+      { $group: { _id: "$category", count: { $sum: 1 } } }
+    ]);
+    const chartData = productsByCategory.map(item => ({
+      name: item._id,
+      total: item.count
+    }));
+
+    // Dữ liệu bảng 5 đơn mới nhất (Vẫn hiện cả đơn hủy để Admin biết)
+    const recentOrders = await Order.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('userId', 'fullName email');
+
+    res.json({ totalProducts, totalUsers, totalOrders, totalRevenue, chartData, recentOrders });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { getDashboardStats };
+// 1. LẤY TẤT CẢ ĐƠN HÀNG (Dành cho Admin)
+const getAllOrders = async (req, res) => {
+  try {
+    // Populate để lấy thêm thông tin Tên và Email của người mua từ bảng User
+    const orders = await Order.find({})
+      .populate('userId', 'fullName email')
+      .sort({ createdAt: -1 }); // Mới nhất xếp lên đầu
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 2. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+const updateOrderStatus = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+
+    // --- LOGIC MỚI: Nếu Admin bấm chuyển sang "Đã hủy" ---
+    if (req.body.status === 'Đã hủy' && order.status !== 'Đã hủy') {
+      // Import model Product ở đầu file nếu chưa có: const Product = require('../models/Product');
+      for (const item of order.items) {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          product.stock += item.quantity; // Trả lại số lượng vào kho
+          await product.save();
+        }
+      }
+    }
+
+    order.status = req.body.status;
+    const updatedOrder = await order.save();
+    res.json(updatedOrder);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { getDashboardStats, getAllOrders, updateOrderStatus };

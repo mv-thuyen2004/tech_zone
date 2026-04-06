@@ -7,6 +7,7 @@ interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  stock: number;
 }
 
 interface CartStore {
@@ -31,9 +32,17 @@ export const useCart = create<CartStore>()(
       setCurrentUser: (userId) => set({ currentUserId: userId }),
 
       addItem: (product) => set((state) => {
-        if (!state.currentUserId) return state; // Phải có chìa khóa mới cho thao tác
+        if (!state.currentUserId) return state; 
         const userCart = state.carts[state.currentUserId] || [];
         const existingItem = userCart.find((item) => item._id === product._id);
+
+        // --- BẮT ĐẦU PHẦN CHECK TỒN KHO ---
+        const currentQty = existingItem ? existingItem.quantity : 0;
+        if (currentQty >= product.stock) {
+          alert(`Rất tiếc! Bạn chỉ có thể mua tối đa ${product.stock} sản phẩm này.`);
+          return state; // Dừng lại, không thay đổi giỏ hàng
+        }
+        // --- KẾT THÚC ---
 
         let updatedCart;
         if (existingItem) {

@@ -17,6 +17,7 @@ interface ProductProps {
     category: string;
     images: string[];
     compatibleModels: string[];
+    stock: number;
   };
 }
 
@@ -32,7 +33,11 @@ export default function ProductCard({ product }: ProductProps) {
       return;
     }
     addItem(product);
+
+   
   };
+   // Biến kiểm tra hết hàng
+    const isOutOfStock = product.stock <= 0;
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all group border-none bg-card">
       <Link href={`/product/${product.slug}`}>
@@ -46,6 +51,14 @@ export default function ProductCard({ product }: ProductProps) {
           <Badge className="absolute top-2 left-2 bg-white/80 text-black backdrop-blur-md" variant="outline">
             {product.category}
           </Badge>
+          {/* NẾU HẾT HÀNG THÌ HIỆN CHỮ MỜ TRÊN ẢNH */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="bg-black/70 text-white px-4 py-2 rounded-lg font-semibold tracking-wider">
+                HẾT HÀNG
+              </span>
+            </div>
+          )}
         </div>
       </Link>
       <CardContent className="p-4">
@@ -57,9 +70,10 @@ export default function ProductCard({ product }: ProductProps) {
       <CardFooter className="p-4 pt-0 border-none bg-white/80">
         <Button 
             onClick={handleAddToCart} // Bấm cái là bay vào giỏ!
+            disabled={isOutOfStock} // NẾU HẾT HÀNG -> KHÓA NÚT BẤM
             className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl"
         >
-        Thêm vào giỏ
+        {isOutOfStock ? "Tạm hết hàng" : "Thêm vào giỏ"}
       </Button>
       </CardFooter>
     </Card>

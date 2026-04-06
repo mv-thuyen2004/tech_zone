@@ -128,17 +128,23 @@ export default function CheckoutPage() {
           <CardContent className="p-6">
             <h2 className="text-xl font-bold mb-6">Đơn hàng của bạn</h2>
             
-            <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
+            <div className="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2">
               {items.map((item) => (
-                <div key={item._id} className="flex justify-between items-center text-sm">
+                <div key={item._id} className="flex justify-between items-center text-sm border-b pb-3 last:border-0 last:pb-0">
                   <div className="flex items-center gap-3">
-                    <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded border" />
+                    <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-lg border bg-white" />
                     <div>
-                      <p className="font-medium line-clamp-1 max-w-[180px]">{item.name}</p>
-                      <p className="text-muted-foreground text-xs">SL: {item.quantity}</p>
+                      <p className="font-medium line-clamp-1 max-w-[180px] sm:max-w-[250px]">{item.name}</p>
+                      {/* HIỂN THỊ RÕ RÀNG SỐ LƯỢNG x ĐƠN GIÁ */}
+                      <p className="text-muted-foreground text-xs mt-1">
+                        SL: {item.quantity} <span className="mx-1">x</span> {item.price.toLocaleString('vi-VN')}đ
+                      </p>
                     </div>
                   </div>
-                  <span className="font-semibold">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</span>
+                  {/* HIỂN THỊ TỔNG TIỀN (SL * GIÁ) */}
+                  <span className="font-semibold text-red-600">
+                    {(item.price * item.quantity).toLocaleString('vi-VN')}đ
+                  </span>
                 </div>
               ))}
             </div>
