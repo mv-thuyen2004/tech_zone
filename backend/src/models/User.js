@@ -5,21 +5,13 @@ const userSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  phone: { type: String, required: true }, 
-  address: { type: String, required: true },
+  phone: { type: String, default: "" },
+  address: { type: String, default: "" },
   role: { type: String, enum: ['user', 'admin'], default: 'user' }
 }, { timestamps: true });
 
-// Middleware: Tự động hash password trước khi lưu (Save)
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    next();
-  }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-});
+// ĐÃ XÓA HOÀN TOÀN HÀM TỰ ĐỘNG BĂM ĐỂ TRÁNH LỖI XUNG ĐỘT
 
-// Hàm hỗ trợ: Kiểm tra password khi đăng nhập
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

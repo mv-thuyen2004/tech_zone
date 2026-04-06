@@ -93,6 +93,11 @@ export default function Navbar() {
                 Chào, <span className="text-primary">{user?.fullName}</span>
                 {user?.role === 'admin' && <span className="ml-1 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Admin</span>}
               </span>
+              <Link href="/profile">
+                <Button variant="ghost" className="text-muted-foreground hover:text-primary px-2">
+                  Hồ sơ
+                </Button>
+              </Link>
               <Link href="/my-orders">
                 <Button variant="ghost" className="text-muted-foreground hover:text-primary">
                   Đơn mua
