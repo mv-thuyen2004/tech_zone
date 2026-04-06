@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Wallet, Truck } from "lucide-react"; // Import icon
 
 export default function CheckoutPage() {
   const { user, isAuthenticated, token } = useAuth();
@@ -22,6 +23,9 @@ export default function CheckoutPage() {
     address: "",
   });
 
+  // State MỚI: Chọn phương thức thanh toán
+  const [paymentMethod, setPaymentMethod] = useState("COD");
+
   const items = currentUserId ? (carts[currentUserId] || []) : [];
   const totalPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
 
@@ -29,11 +33,10 @@ export default function CheckoutPage() {
     setIsMounted(true);
     if (isMounted) {
       if (!isAuthenticated) router.push("/login");
-      if (items.length === 0) router.push("/cart"); // Giỏ rỗng thì đuổi về
+      if (items.length === 0) router.push("/cart"); 
     }
   }, [isMounted, isAuthenticated, router, items.length]);
 
-  // Đổ dữ liệu từ user vào form sau khi component đã mount
   useEffect(() => {
     if (user) {
       setFormData({
@@ -46,19 +49,20 @@ export default function CheckoutPage() {
 
   if (!isMounted || !isAuthenticated || items.length === 0) return null;
 
+  // HÀM XỬ LÝ ĐẶT HÀNG ĐÃ NÂNG CẤP
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Đóng gói mảng items để gửi lên cho hợp chuẩn Model của Backend
       const orderItems = items.map(item => ({
         productId: item._id,
         quantity: item.quantity,
         price: item.price
       }));
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
+      // 1. GỌI API TẠO ĐƠN HÀNG TRƯỚC
+      const orderRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -68,63 +72,133 @@ export default function CheckoutPage() {
           items: orderItems,
           shippingInfo: formData,
           totalPrice,
-          paymentMethod: "COD"
+          paymentMethod // "COD" hoặc "VNPAY"
         })
       });
 
-      if (!res.ok) throw new Error("Đặt hàng thất bại");
+      if (!orderRes.ok) throw new Error("Tạo đơn hàng thất bại!");
+      const newOrder = await orderRes.json(); // Lấy data đơn hàng vừa tạo để lấy ID
 
-      alert("🎉 Đặt hàng thành công! TechZone sẽ sớm liên hệ để giao hàng cho bạn.");
-      clearCart(); // Dọn sạch giỏ hàng
-      router.push("/"); // Đá về trang chủ
+      // Dọn giỏ hàng ngay sau khi chốt đơn thành công
+      clearCart(); 
+
+      // 2. KIỂM TRA PHƯƠNG THỨC THANH TOÁN
+      if (paymentMethod === "VNPAY") {
+        // Gọi API lấy Link thanh toán VNPAY
+        const vnpRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${newOrder._id}/create_payment_url`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        const vnpData = await vnpRes.json();
+        if (vnpData.paymentUrl) {
+          // CHUYỂN HƯỚNG SANG TRANG VNPAY
+          window.location.href = vnpData.paymentUrl;
+        } else {
+          throw new Error("Không thể tạo link thanh toán VNPAY");
+        }
+      } else {
+        // NẾU LÀ COD
+        alert("🎉 Đặt hàng thành công! TechZone sẽ sớm giao hàng cho bạn.");
+        router.push("/my-orders");
+      }
       
     } catch (error: any) {
       alert(error.message);
-    } finally {
       setLoading(false);
-    }
+    } 
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-10">
+    <div className="max-w-4xl mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">Thanh toán đơn hàng</h1>
       
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Cột 1: Form địa chỉ */}
-        <Card className="border-none shadow-md">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold mb-6">Thông tin giao hàng</h2>
-            <form id="checkout-form" onSubmit={handlePlaceOrder} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Người nhận</label>
-                <Input 
-                  required 
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Số điện thoại</label>
-                <Input 
-                  required 
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Địa chỉ chi tiết</label>
-                <Input 
-                  required 
-                  value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
-                />
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+        {/* Cột 1: Form địa chỉ & Phương thức thanh toán */}
+        <div className="space-y-6">
+          <Card className="border-none shadow-md">
+            <CardContent className="p-6">
+              <h2 className="text-xl font-bold mb-6">Thông tin giao hàng</h2>
+              <form id="checkout-form" onSubmit={handlePlaceOrder} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Người nhận</label>
+                  <Input 
+                    required 
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Số điện thoại</label>
+                  <Input 
+                    required 
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Địa chỉ chi tiết</label>
+                  <Input 
+                    required 
+                    value={formData.address}
+                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  />
+                </div>
+              </form>
+            </CardContent>
+          </Card>
 
-        {/* Cột 2: Tóm tắt giỏ hàng */}
-        <Card className="border-none shadow-md bg-slate-50/50">
+          {/* KHU VỰC CHỌN PHƯƠNG THỨC THANH TOÁN */}
+          <Card className="border-none shadow-md">
+            <CardContent className="p-6">
+              <h2 className="text-xl font-bold mb-6">Phương thức thanh toán</h2>
+              <div className="space-y-3">
+                
+                {/* Lựa chọn COD */}
+                <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "COD" ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"}`}>
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="COD" 
+                    checked={paymentMethod === "COD"}
+                    onChange={() => setPaymentMethod("COD")}
+                    className="w-5 h-5 accent-primary"
+                  />
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 text-green-600 rounded-full"><Truck className="w-5 h-5"/></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">Thanh toán khi nhận hàng (COD)</p>
+                      <p className="text-xs text-muted-foreground">Nhận hàng rồi mới thanh toán</p>
+                    </div>
+                  </div>
+                </label>
+
+                {/* Lựa chọn VNPAY */}
+                <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "VNPAY" ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"}`}>
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="VNPAY" 
+                    checked={paymentMethod === "VNPAY"}
+                    onChange={() => setPaymentMethod("VNPAY")}
+                    className="w-5 h-5 accent-primary"
+                  />
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 text-blue-600 rounded-full"><Wallet className="w-5 h-5"/></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">Thanh toán qua VNPAY</p>
+                      <p className="text-xs text-muted-foreground">Quẹt thẻ ATM, Visa, QRCode ứng dụng NH</p>
+                    </div>
+                  </div>
+                </label>
+
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Cột 2: Tóm tắt giỏ hàng (Giữ nguyên) */}
+        <Card className="border-none shadow-md bg-slate-50/50 h-fit">
           <CardContent className="p-6">
             <h2 className="text-xl font-bold mb-6">Đơn hàng của bạn</h2>
             
@@ -135,13 +209,11 @@ export default function CheckoutPage() {
                     <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-lg border bg-white" />
                     <div>
                       <p className="font-medium line-clamp-1 max-w-[180px] sm:max-w-[250px]">{item.name}</p>
-                      {/* HIỂN THỊ RÕ RÀNG SỐ LƯỢNG x ĐƠN GIÁ */}
                       <p className="text-muted-foreground text-xs mt-1">
                         SL: {item.quantity} <span className="mx-1">x</span> {item.price.toLocaleString('vi-VN')}đ
                       </p>
                     </div>
                   </div>
-                  {/* HIỂN THỊ TỔNG TIỀN (SL * GIÁ) */}
                   <span className="font-semibold text-red-600">
                     {(item.price * item.quantity).toLocaleString('vi-VN')}đ
                   </span>
@@ -158,10 +230,6 @@ export default function CheckoutPage() {
                 <span>Phí vận chuyển:</span>
                 <span>0đ</span>
               </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>Phương thức:</span>
-                <span>Thanh toán khi nhận hàng (COD)</span>
-              </div>
             </div>
 
             <div className="border-t my-4"></div>
@@ -173,11 +241,11 @@ export default function CheckoutPage() {
 
             <Button 
               type="submit" 
-              form="checkout-form" // Trỏ submit vào form ở bên kia
+              form="checkout-form"
               className="w-full h-14 text-base rounded-xl bg-primary" 
               disabled={loading}
             >
-              {loading ? "Đang xử lý..." : "Xác nhận đặt hàng"}
+              {loading ? "Đang xử lý..." : (paymentMethod === "VNPAY" ? "Thanh toán VNPAY" : "Xác nhận đặt hàng")}
             </Button>
           </CardContent>
         </Card>

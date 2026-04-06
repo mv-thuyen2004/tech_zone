@@ -72,7 +72,7 @@ export default function Navbar() {
         </div>
 
         {/* KHỐI 2: FORM TÌM KIẾM (Đổi thành lg:flex để tránh đè menu trên iPad) */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden lg:flex items-center space-x-2">
+        <form onSubmit={handleSearch} className="flex flex-1 max-w-xl mx-4 items-center space-x-2">
           <Input 
             type="search" 
             placeholder="Tìm kiếm ốp lưng, sạc, cường lực..." 

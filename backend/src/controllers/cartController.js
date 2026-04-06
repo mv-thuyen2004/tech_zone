@@ -72,5 +72,18 @@ const removeFromCart = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// 4. LÀM SẠCH GIỎ HÀNG (Dùng khi thanh toán xong)
+const clearCart = async (req, res) => {
+  try {
+    let cart = await Cart.findOne({ userId: req.user._id });
+    if (cart) {
+      cart.items = []; // Xóa rỗng mảng items
+      await cart.save();
+    }
+    res.json({ message: 'Đã làm sạch giỏ hàng' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-module.exports = { getCart, addToCart, removeFromCart };
+module.exports = { getCart, addToCart, removeFromCart, clearCart };

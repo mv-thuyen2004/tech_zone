@@ -12,7 +12,7 @@ const generateToken = (id) => {
 // ĐĂNG KÝ
 const registerUser = async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password , phone, address } = req.body;
 
     // 1. Kiểm tra xem email đã tồn tại chưa
     const userExists = await User.findOne({ email });
@@ -29,6 +29,8 @@ const registerUser = async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
+      phone: req.body.phone,
+      address: req.body.address
     });
 
     if (user) {

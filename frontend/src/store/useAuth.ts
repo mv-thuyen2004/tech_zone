@@ -29,6 +29,7 @@ export const useAuth = create<AuthStore>()(
         // Vừa login xong là lấy ID gán sang làm chìa khóa cho Giỏ hàng
         useCart.getState().setCurrentUser(user._id); 
         set({ user, token, isAuthenticated: true });
+        useCart.getState().fetchCart(); // Đồng bộ giỏ hàng ngay sau khi login
       },
       logout: () => {
         // Vừa logout là rút chìa khóa giỏ hàng ra ngay
