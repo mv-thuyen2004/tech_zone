@@ -2,21 +2,18 @@ import RecommendedProducts from "@/components/product/RecommendedProducts";
 import { Badge } from "@/components/ui/badge";
 import AddToCartDetail from "@/components/product/AddToCartDetail";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { Star } from "lucide-react"; // Đã import thêm Star
+import ProductReviews from "@/components/product/ProductReviews";
 
-// Hàm gọi API lấy 1 sản phẩm theo slug
 async function getProduct(slug: string) {
-  // Đừng quên đổi port 3000 thành port Backend của bạn (vd: 5000) nếu cần
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${slug}`, { 
-    cache: 'no-store' // Luôn lấy data mới nhất
+    cache: 'no-store' 
   });
   
   if (!res.ok) return null;
   return res.json();
 }
 
-// Next.js 15: params là một Promise
 export default async function ProductDetailPage({ 
   params 
 }: { 
@@ -25,21 +22,18 @@ export default async function ProductDetailPage({
   const resolvedParams = await params;
   const product = await getProduct(resolvedParams.slug);
 
-  // Nếu nhập sai link, đá sang trang 404 (Not Found)
   if (!product) {
     return notFound();
   }
 
-  // Lấy ảnh hiển thị (Ưu tiên link Cloudinary, nếu không có thì dùng placeholder)
   const imageUrl = product.images && product.images[0] 
     ? product.images[0] 
     : "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=600&auto=format&fit=crop";
 
   return (
-    <div className="max-w-6xl mx-auto py-8">
+    <div className="max-w-6xl mx-auto py-8 px-4">
       
-
-      <div className="grid md:grid-cols-2 gap-12">
+      <div className="grid md:grid-cols-2 gap-12 mb-16">
         {/* Cột trái: Hình ảnh */}
         <div className="bg-muted rounded-3xl overflow-hidden aspect-square relative flex items-center justify-center p-8">
           <img 
@@ -58,6 +52,22 @@ export default async function ProductDetailPage({
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
             {product.name}
           </h1>
+
+          {/* HÀNG SAO ĐÁNH GIÁ (Đã fix màu chuẩn) */}
+          <div className="flex items-center gap-1 mb-4">
+            <div className="flex">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`w-5 h-5 ${product.rating >= star ? "text-yellow-400" : "text-slate-300"}`}
+                  fill={product.rating >= star ? "currentColor" : "none"} // Fix lõi không lên màu
+                />
+              ))}
+            </div>
+            <span className="text-sm text-muted-foreground ml-2">
+              ({product.numReviews || 0} đánh giá)
+            </span>
+          </div>
           
           <p className="text-4xl font-extrabold text-red-600 mb-6">
             {product.price.toLocaleString('vi-VN')}đ
@@ -82,17 +92,20 @@ export default async function ProductDetailPage({
           </div>
 
           <div className="pt-6 border-t">
-            {/* Nhúng Client Component Nút bấm vào đây */}
             <AddToCartDetail product={product} />
           </div>
         </div>
       </div>
-              <div className="h-6" />
-            <div className="pt-24  mt-20"> 
+
+      {/* TÁCH HẲN KHU VỰC BÌNH LUẬN XUỐNG DƯỚI ĐỂ TRÀN VIỀN MÀN HÌNH */}
+      <div className="h-4" />
+      <ProductReviews productId={product._id} reviews={product.reviews} />
+      <div className="h-4" />
+      {/* Sản phẩm gợi ý */}
+      <div className="pt-16 mt-16 "> 
         <RecommendedProducts productId={product._id} />
       </div>
 
     </div>
-    
   );
 }

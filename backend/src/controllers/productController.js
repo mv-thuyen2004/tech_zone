@@ -161,4 +161,45 @@ const getRecommendedProducts = async (req, res) => {
 };
 
 
-module.exports = { getProducts, getProductBySlug, createProduct , deleteProduct, updateProduct, getRecommendedProducts};
+const createProductReview = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const product = await Product.findById(req.params.id);
+
+    if (product) {
+      // Kiểm tra xem user này đã đánh giá sản phẩm này chưa
+      const alreadyReviewed = product.reviews.find(
+        (r) => r.user.toString() === req.user._id.toString()
+      );
+
+      if (alreadyReviewed) {
+        return res.status(400).json({ message: 'Bạn đã đánh giá sản phẩm này rồi!' });
+      }
+
+      // Tạo object đánh giá mới
+      const review = {
+        name: req.user.fullName, // Lấy tên từ token đăng nhập
+        rating: Number(rating),
+        comment,
+        user: req.user._id,
+      };
+
+      // Thêm vào mảng reviews
+      product.reviews.push(review);
+      
+      // Cập nhật tổng số lượng và điểm trung bình
+      product.numReviews = product.reviews.length;
+      product.rating = product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length;
+
+      await product.save();
+      res.status(201).json({ message: 'Đã thêm đánh giá thành công' });
+    } else {
+      res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+module.exports = { getProducts, getProductBySlug, createProduct , deleteProduct, updateProduct, getRecommendedProducts, createProductReview};

@@ -65,7 +65,7 @@ const getMyOrders = async (req, res) => {
   try {
     // Chỉ tìm những đơn hàng có userId khớp với ID của người đang request
     const orders = await Order.find({ userId: req.user._id })
-      .populate('items.productId', 'name images')
+      .populate('items.productId', 'name images reviews')
       .sort({ createdAt: -1 }); // Mới nhất xếp lên đầu
       
     res.json(orders);
