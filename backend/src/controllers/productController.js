@@ -11,10 +11,16 @@ const getProducts = async (req, res) => {
     let keywordQuery = {};
     if (req.query.keyword) {
       // Tách chuỗi người dùng nhập thành các từ riêng lẻ (loại bỏ khoảng trắng thừa)
+      // 1. Định nghĩa các từ không có giá trị tìm kiếm (Stop-words tiếng Việt)
+      const stopWords = ['cho', 'và', 'của', 'với', 'các', 'những', 'thì', 'là', 'mà'];
       // Ví dụ: "sạc iphone" -> ["sạc", "iphone"]
-      const searchWords = req.query.keyword.trim().split(/\s+/);
+      const searchWords = req.query.keyword
+        .trim()
+        .split(/\s+/)
+        .filter(word => !stopWords.includes(word.toLowerCase())); // Loại bỏ stop-words
 
       // Tạo mảng điều kiện: Sản phẩm phải chứa TẤT CẢ các từ khóa ($and)
+      if (searchWords.length > 0) {
       const andConditions = searchWords.map((word) => ({
         // Mỗi từ khóa có thể nằm ở 1 trong 4 trường này ($or)
         $or: [
@@ -27,7 +33,7 @@ const getProducts = async (req, res) => {
 
       keywordQuery = { $and: andConditions };
     }
-
+    }
     // 3. Lọc theo danh mục (nếu người dùng bấm các nút Category trên giao diện)
     const categoryFilter = req.query.category ? { category: req.query.category } : {};
 

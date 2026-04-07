@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
+import ChatWidget from "@/components/chat/ChatWidget";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -21,7 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-1 container mx-auto px-4 py-6">
           {children}
         </main>
+        
         <Footer />
+   
       </body>
     </html>
   );

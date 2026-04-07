@@ -2,6 +2,7 @@ import ProductCard from "@/components/product/ProductCard";
 import CategoryFilter from "@/components/product/CategoryFilter";
 import SortAndPriceFilter from "@/components/product/SortAndPriceFilter"; // Import component mới
 import PaginationControl from "@/components/product/PaginationControl"; 
+import ChatWidget from "@/components/chat/ChatWidget";
 
 // Thêm tham số minPrice, maxPrice, sort
 async function getProducts(keyword?: string, category?: string, page?: string, minPrice?: string, maxPrice?: string, sort?: string) {
@@ -35,7 +36,7 @@ export default async function HomePage({
 
   return (
     <div className="space-y-4">
-      {/* Ẩn Banner nếu người dùng đang tìm kiếm hoặc đang lọc danh mục */}
+      
       {(!keyword && !category && !minPrice && !maxPrice) && (
         <div className="bg-primary/10 rounded-2xl p-8 md:p-12 flex flex-col items-center text-center mb-8">
           <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
@@ -80,6 +81,25 @@ export default async function HomePage({
           </>
         )}
       </div>
+
+      <section className="bg-slate-50 border-t border-slate-200 py-16 mt-8">
+        <div className="container mx-auto px-4 max-w-4xl">
+          
+          {/* Tiêu đề thu hút */}
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              Bạn Cần Tư Vấn? Hỏi AI Ngay!
+            </h2>
+            <p className="text-slate-500 mt-3 text-lg">
+              Trợ lý ảo TechZone trực 24/7. Giải đáp mọi thắc mắc về giá cả, tồn kho và độ tương thích của phụ kiện.
+            </p>
+          </div>
+
+          {/* Nhúng Khối Chat vào đây */}
+          <ChatWidget />
+          
+        </div>
+      </section>
     </div>
   );
 }
