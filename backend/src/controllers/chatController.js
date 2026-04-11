@@ -46,11 +46,11 @@ DANH SÁCH SẢN PHẨM HIỆN CÓ TRONG KHO:
 ${productListText}`;
 
     // // Cấu hình AI chuẩn mới
-    const model = client.getGenerativeModel({
-      model: 'gemini-2.5-flash-lite', // Model nhanh, ổn định và miễn phí
+    // const model = client.getGenerativeModel({
+    //   model: 'gemini-2.5-flash-lite', // Model nhanh, ổn định và miễn phí
       
-      systemInstruction: systemPrompt,
-    });
+    //   systemInstruction: systemPrompt,
+    // });
 
     // 4. Gửi câu hỏi của khách
     const result = await model.generateContent(message);
