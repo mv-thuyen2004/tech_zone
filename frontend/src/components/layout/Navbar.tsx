@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, Search, Menu, User, LogOut } from "lucide-react";
+import { ShoppingCart, Search, Menu, User, LogOut, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/store/useCart";
@@ -52,6 +52,10 @@ export default function Navbar() {
     router.push("/"); // Đá về trang chủ sau khi đăng xuất cho an toàn
   };
 
+  const handleChatClick = () => {
+    window.dispatchEvent(new Event("techzone:toggle-chat"));
+  };
+
   return (
     <nav className="border-b bg-background sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
@@ -87,6 +91,18 @@ export default function Navbar() {
 
         {/* KHỐI 3: USER & GIỎ HÀNG */}
         <div className="flex items-center gap-2 md:gap-4">
+          {pathname === "/" && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="border-none shadow-none"
+              onClick={handleChatClick}
+              title="Mở chatbot"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </Button>
+          )}
+
           {isMounted && isAuthenticated ? (
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium hidden sm:block">

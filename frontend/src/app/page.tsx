@@ -82,24 +82,7 @@ export default async function HomePage({
         )}
       </div>
 
-      <section className="bg-slate-50 border-t border-slate-200 py-16 mt-8">
-        <div className="container mx-auto px-4 max-w-4xl">
-          
-          {/* Tiêu đề thu hút */}
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Bạn Cần Tư Vấn? Hỏi AI Ngay!
-            </h2>
-            <p className="text-slate-500 mt-3 text-lg">
-              Trợ lý ảo TechZone trực 24/7. Giải đáp mọi thắc mắc về giá cả, tồn kho và độ tương thích của phụ kiện.
-            </p>
-          </div>
-
-          {/* Nhúng Khối Chat vào đây */}
-          <ChatWidget />
-          
-        </div>
-      </section>
+      <ChatWidget />
     </div>
   );
 }
