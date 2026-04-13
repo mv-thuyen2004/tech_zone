@@ -4,6 +4,7 @@ import AddToCartDetail from "@/components/product/AddToCartDetail";
 import { notFound } from "next/navigation";
 import { Star } from "lucide-react"; // Đã import thêm Star
 import ProductReviews from "@/components/product/ProductReviews";
+import ViewHistoryTracker from "@/components/product/ViewHistoryTracker";
 
 async function getProduct(slug: string) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${slug}`, { 
@@ -32,6 +33,7 @@ export default async function ProductDetailPage({
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4">
+      <ViewHistoryTracker productId={product._id} />
       
       <div className="grid md:grid-cols-2 gap-12 mb-16">
         {/* Cột trái: Hình ảnh */}

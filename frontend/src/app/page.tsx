@@ -3,6 +3,7 @@ import CategoryFilter from "@/components/product/CategoryFilter";
 import SortAndPriceFilter from "@/components/product/SortAndPriceFilter"; // Import component mới
 import PaginationControl from "@/components/product/PaginationControl"; 
 import ChatWidget from "@/components/chat/ChatWidget";
+import HistoryBasedRecommendations from "@/components/product/HistoryBasedRecommendations";
 
 // Thêm tham số minPrice, maxPrice, sort
 async function getProducts(keyword?: string, category?: string, page?: string, minPrice?: string, maxPrice?: string, sort?: string) {
@@ -81,6 +82,8 @@ export default async function HomePage({
           </>
         )}
       </div>
+
+      <HistoryBasedRecommendations />
 
       <ChatWidget />
     </div>

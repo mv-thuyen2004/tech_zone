@@ -182,6 +182,76 @@ const getRecommendedProducts = async (req, res) => {
   }
 };
 
+// GỢI Ý THEO LỊCH SỬ XEM (Client gửi mảng productId đã xem)
+const getHistoryBasedRecommendations = async (req, res) => {
+  try {
+    const { viewedProductIds = [], limit = 10 } = req.body || {};
+
+    if (!Array.isArray(viewedProductIds)) {
+      return res.status(400).json({ message: 'viewedProductIds phải là mảng' });
+    }
+
+    const normalizedIds = [...new Set(
+      viewedProductIds
+        .filter((id) => typeof id === 'string' && id.trim())
+        .map((id) => id.trim())
+    )].slice(-20);
+
+    if (normalizedIds.length === 0) {
+      return res.json([]);
+    }
+
+    const viewedProducts = await Product.find({ _id: { $in: normalizedIds } })
+      .select('category compatibleModels');
+
+    if (!viewedProducts.length) {
+      return res.json([]);
+    }
+
+    const categories = [...new Set(viewedProducts.map((p) => p.category).filter(Boolean))];
+    const compatibleModels = [...new Set(
+      viewedProducts.flatMap((p) => Array.isArray(p.compatibleModels) ? p.compatibleModels : [])
+    )];
+
+    if (!categories.length && !compatibleModels.length) {
+      return res.json([]);
+    }
+
+    const candidates = await Product.find({
+      _id: { $nin: normalizedIds },
+      $or: [
+        { category: { $in: categories } },
+        { compatibleModels: { $in: compatibleModels } },
+      ],
+    })
+      .limit(60)
+      .sort({ createdAt: -1 });
+
+    const scored = candidates.map((product) => {
+      let score = 0;
+      if (categories.includes(product.category)) score += 2;
+
+      const productModels = Array.isArray(product.compatibleModels) ? product.compatibleModels : [];
+      const overlapCount = productModels.filter((m) => compatibleModels.includes(m)).length;
+      score += overlapCount * 3;
+
+      return { product, score };
+    });
+
+    const finalProducts = scored
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return (b.product.rating || 0) - (a.product.rating || 0);
+      })
+      .slice(0, Math.max(1, Number(limit) || 10))
+      .map((item) => item.product);
+
+    res.json(finalProducts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 const createProductReview = async (req, res) => {
   try {
@@ -238,4 +308,14 @@ const getProductById = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, getProductBySlug, createProduct , deleteProduct, updateProduct, getRecommendedProducts, createProductReview, getProductById};
+module.exports = {
+  getProducts,
+  getProductBySlug, 
+  createProduct,
+  deleteProduct,
+  updateProduct,
+  getRecommendedProducts,
+  getHistoryBasedRecommendations,
+  createProductReview,
+  getProductById,
+};
