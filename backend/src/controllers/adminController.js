@@ -77,4 +77,70 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-module.exports = { getDashboardStats, getAllOrders, updateOrderStatus };
+// 3. LẤY DANH SÁCH TÀI KHOẢN (Dành cho Admin)
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 4. CẬP NHẬT QUYỀN TÀI KHOẢN
+const updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+
+    if (!['user', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'Vai trò không hợp lệ' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
+    }
+
+    user.role = role;
+    const updatedUser = await user.save();
+    res.json({
+      _id: updatedUser._id,
+      fullName: updatedUser.fullName,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      address: updatedUser.address,
+      role: updatedUser.role,
+      createdAt: updatedUser.createdAt,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 5. XÓA TÀI KHOẢN
+const deleteUser = async (req, res) => {
+  try {
+    if (req.user && req.user._id && req.user._id.toString() === req.params.id) {
+      return res.status(400).json({ message: 'Không thể tự xóa tài khoản admin đang đăng nhập' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Đã xóa tài khoản thành công' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  getDashboardStats,
+  getAllOrders,
+  updateOrderStatus,
+  getAllUsers,
+  updateUserRole,
+  deleteUser,
+};

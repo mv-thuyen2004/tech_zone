@@ -3,7 +3,7 @@ import { useAuth } from "@/store/useAuth";
 import { usePathname, useRouter } from "next/navigation"; // Thêm usePathname
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LayoutDashboard, PlusCircle, Package, Home, LogOut, Ticket } from "lucide-react";
+import { LayoutDashboard, PlusCircle, Package, Home, LogOut, Ticket, Users } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
@@ -27,6 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/products", icon: <Package className="h-5 w-5" />, label: "Quản lý kho" },
     { href: "/admin/orders", icon: <Package className="h-5 w-5" />, label: "Quản lý đơn hàng" },
     { href: "/admin/vouchers", icon: <Ticket className="h-5 w-5" />, label: "Quản lý mã giảm giá" },
+    { href: "/admin/users", icon: <Users className="h-5 w-5" />, label: "Quản lý tài khoản" },
   ];
 
   return (
