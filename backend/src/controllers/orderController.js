@@ -1,11 +1,12 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product'); 
+const Voucher = require('../models/Voucher');
 const crypto = require('crypto');
 const querystring = require('querystring');
 
 const createOrder = async (req, res) => {
   try {
-    const { items, shippingInfo, totalPrice, paymentMethod } = req.body;
+    const { items, shippingInfo, totalPrice, paymentMethod, voucherCode, discountAmount } = req.body;
 
     if (items && items.length === 0) {
       return res.status(400).json({ message: 'Không có sản phẩm nào trong đơn hàng' });
@@ -15,6 +16,24 @@ const createOrder = async (req, res) => {
     // BƯỚC 1: CHỈ KIỂM TRA (VALIDATE) TẤT CẢ SẢN PHẨM
    
     const productsToUpdate = []; // Mảng tạm để lưu các sản phẩm đã pass kiểm tra
+    const normalizedVoucherCode = typeof voucherCode === 'string' && voucherCode.trim()
+      ? voucherCode.trim().toUpperCase()
+      : null;
+    const safeDiscountAmount = Math.max(0, Number(discountAmount || 0));
+    let validatedVoucher = null;
+
+    if (normalizedVoucherCode) {
+      validatedVoucher = await Voucher.findOne({
+        code: normalizedVoucherCode,
+        isActive: true,
+        expiryDate: { $gt: new Date() },
+        $expr: { $lt: ['$usedCount', '$usageLimit'] },
+      });
+
+      if (!validatedVoucher) {
+        return res.status(400).json({ message: 'Mã giảm giá không hợp lệ hoặc đã hết lượt dùng' });
+      }
+    }
     
     for (const item of items) {
       const product = await Product.findById(item.productId);
@@ -51,11 +70,26 @@ const createOrder = async (req, res) => {
       items,
       shippingInfo,
       totalPrice,
+      voucherCode: normalizedVoucherCode,
+      discountAmount: safeDiscountAmount,
       paymentMethod,
       status: paymentMethod === 'VNPAY' ? 'Chờ thanh toán' : 'Chờ xác nhận'
     });
 
     const createdOrder = await order.save();
+
+    if (validatedVoucher && paymentMethod !== 'VNPAY') {
+      await Voucher.findOneAndUpdate(
+        {
+          _id: validatedVoucher._id,
+          isActive: true,
+          expiryDate: { $gt: new Date() },
+          $expr: { $lt: ['$usedCount', '$usageLimit'] },
+        },
+        { $inc: { usedCount: 1 } }
+      );
+    }
+
     res.status(201).json(createdOrder);
 
   } catch (error) {
@@ -212,6 +246,19 @@ const vnpayReturn = async (req, res) => {
         order.paidAt = Date.now();
         order.status = 'Chờ xác nhận'; 
         await order.save();
+
+        if (order.voucherCode) {
+          await Voucher.findOneAndUpdate(
+            {
+              code: order.voucherCode,
+              isActive: true,
+              expiryDate: { $gt: new Date() },
+              $expr: { $lt: ['$usedCount', '$usageLimit'] },
+            },
+            { $inc: { usedCount: 1 } }
+          );
+        }
+
         return res.status(200).json({ message: 'Giao dịch thành công' });
       } else {
         // THANH TOÁN THẤT BẠI HOẶC BỊ HỦY

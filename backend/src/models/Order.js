@@ -19,6 +19,8 @@ const orderSchema = new mongoose.Schema({
     phone: { type: String, required: true },
     address: { type: String, required: true }
   },
+  voucherCode: { type: String, uppercase: true, default: null },
+  discountAmount: { type: Number, default: 0 },
   totalPrice: { type: Number, required: true },
   paymentMethod: { type: String, enum: ['COD', 'VNPAY'], default: 'COD' },
   status: { type: String, enum: ['Chờ xác nhận', 'Chờ thanh toán', 'Đang giao hàng', 'Đã giao thành công', 'Đã hủy'], default: 'Chờ xác nhận' }

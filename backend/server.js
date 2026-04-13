@@ -9,6 +9,7 @@ const uploadRoutes = require('./src/routes/uploadRoutes'); // Route mới cho up
 const orderRoutes = require('./src/routes/orderRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const chatRoutes = require('./src/routes/chatRoutes');
+const Voucher = require('./src/routes/voucherRoutes'); // Route cho mã giảm giá
 
 // Load biến môi trường từ file .env
 dotenv.config();
@@ -35,6 +36,8 @@ app.use('/api/upload', uploadRoutes); // Route cho upload ảnh
 app.use('/api/orders', orderRoutes); // Route cho quản lý đơn hàng
 app.use('/api/admin', adminRoutes); // Route cho dashboard admin
 app.use('/api/chat', chatRoutes); // Route cho chatbot AI
+app.use('/api/vouchers', Voucher); // Route cho mã giảm giá
+
 
 const PORT = process.env.PORT || 5000;
 

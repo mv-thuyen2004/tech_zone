@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/store/useAuth";
 import { useCart } from "@/store/useCart";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,7 @@ export default function CheckoutPage() {
   const { user, isAuthenticated, token } = useAuth();
   const { carts, currentUserId, clearCart } = useCart();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -28,6 +29,10 @@ export default function CheckoutPage() {
 
   const items = currentUserId ? (carts[currentUserId] || []) : [];
   const totalPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
+  const voucherCode = searchParams.get("voucher") || "";
+  const discountFromQuery = Number(searchParams.get("discount") || 0);
+  const discountAmount = Number.isFinite(discountFromQuery) ? Math.max(0, discountFromQuery) : 0;
+  const finalTotal = Math.max(0, totalPrice - discountAmount);
 
   useEffect(() => {
     setIsMounted(true);
@@ -71,7 +76,9 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           items: orderItems,
           shippingInfo: formData,
-          totalPrice,
+          totalPrice: finalTotal,
+          voucherCode,
+          discountAmount,
           paymentMethod // "COD" hoặc "VNPAY"
         })
       });
@@ -226,6 +233,14 @@ export default function CheckoutPage() {
                 <span>Tạm tính:</span>
                 <span>{totalPrice.toLocaleString('vi-VN')}đ</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>
+                    Giảm giá{voucherCode ? ` (${voucherCode})` : ""}:
+                  </span>
+                  <span>-{discountAmount.toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
               <div className="flex justify-between text-muted-foreground">
                 <span>Phí vận chuyển:</span>
                 <span>0đ</span>
@@ -236,7 +251,7 @@ export default function CheckoutPage() {
             
             <div className="flex justify-between items-end mb-8">
               <span className="font-bold text-lg">Tổng cộng:</span>
-              <span className="text-2xl font-extrabold text-red-600">{totalPrice.toLocaleString('vi-VN')}đ</span>
+              <span className="text-2xl font-extrabold text-red-600">{finalTotal.toLocaleString('vi-VN')}đ</span>
             </div>
 
             <Button 
