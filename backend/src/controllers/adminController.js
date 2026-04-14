@@ -2,9 +2,42 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const Order = require('../models/Order');
 
+const buildRevenueTimeline = (period, aggregationRows) => {
+  const map = new Map(aggregationRows.map((row) => [row._id, row.revenue]));
+  const now = new Date();
+  const timeline = [];
+
+  if (period === '12m') {
+    for (let i = 11; i >= 0; i -= 1) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      timeline.push({
+        key,
+        label: `T${d.getMonth() + 1}/${String(d.getFullYear()).slice(-2)}`,
+        revenue: map.get(key) || 0,
+      });
+    }
+    return timeline;
+  }
+
+  const days = period === '7d' ? 7 : 30;
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    timeline.push({
+      key,
+      label: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+      revenue: map.get(key) || 0,
+    });
+  }
+  return timeline;
+};
+
 // HÀM 1: LẤY THỐNG KÊ DASHBOARD
 const getDashboardStats = async (req, res) => {
   try {
+    const period = ['7d', '30d', '12m'].includes(req.query.period) ? req.query.period : '30d';
     const totalProducts = await Product.countDocuments();
     const totalUsers = await User.countDocuments({ role: 'user' });
     
@@ -30,7 +63,51 @@ const getDashboardStats = async (req, res) => {
       .limit(5)
       .populate('userId', 'fullName email');
 
-    res.json({ totalProducts, totalUsers, totalOrders, totalRevenue, chartData, recentOrders });
+    const startDate = new Date();
+    if (period === '12m') {
+      startDate.setMonth(startDate.getMonth() - 11);
+      startDate.setDate(1);
+      startDate.setHours(0, 0, 0, 0);
+    } else {
+      const days = period === '7d' ? 6 : 29;
+      startDate.setDate(startDate.getDate() - days);
+      startDate.setHours(0, 0, 0, 0);
+    }
+
+    const dateFormat = period === '12m' ? '%Y-%m' : '%Y-%m-%d';
+    const revenueByTimeRaw = await Order.aggregate([
+      {
+        $match: {
+          status: { $ne: 'Đã hủy' },
+          createdAt: { $gte: startDate },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: dateFormat, date: '$createdAt' } },
+          revenue: { $sum: '$totalPrice' },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const revenueByTime = buildRevenueTimeline(period, revenueByTimeRaw);
+    const periodRevenue = revenueByTime.reduce((sum, item) => sum + item.revenue, 0);
+    const periodOrders = revenueByTimeRaw.reduce((sum, item) => sum + item.orders, 0);
+
+    res.json({
+      totalProducts,
+      totalUsers,
+      totalOrders,
+      totalRevenue,
+      chartData,
+      recentOrders,
+      period,
+      periodRevenue,
+      periodOrders,
+      revenueByTime,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

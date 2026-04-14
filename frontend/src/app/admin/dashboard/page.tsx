@@ -6,24 +6,30 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Package, ShoppingCart, Users, DollarSign } from "lucide-react";
 // Import các component của thư viện vẽ biểu đồ
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+
+type Period = "7d" | "30d" | "12m";
 
 export default function AdminDashboard() {
   const { token } = useAuth();
+  const [period, setPeriod] = useState<Period>("30d");
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
     totalProducts: 0,
     totalUsers: 0,
-    chartData: [],
-    recentOrders: []
+    periodRevenue: 0,
+    periodOrders: 0,
+    chartData: [] as any[],
+    revenueByTime: [] as any[],
+    recentOrders: [] as any[]
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stats`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stats?period=${period}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -39,7 +45,7 @@ export default function AdminDashboard() {
     };
 
     if (token) fetchStats();
-  }, [token]);
+  }, [token, period]);
 
   if (loading) {
     return <div className="text-center py-20 text-muted-foreground animate-pulse">Đang tải dữ liệu tổng quan...</div>;
@@ -103,6 +109,70 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-none shadow-sm">
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <CardTitle>Doanh thu theo thời gian</CardTitle>
+            <CardDescription>Theo dõi doanh thu theo ngày hoặc tháng để nắm xu hướng bán hàng</CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPeriod("7d")}
+              className={`px-3 py-1.5 text-sm rounded-md border ${period === "7d" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-700 border-slate-200"}`}
+            >
+              7 ngày
+            </button>
+            <button
+              onClick={() => setPeriod("30d")}
+              className={`px-3 py-1.5 text-sm rounded-md border ${period === "30d" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-700 border-slate-200"}`}
+            >
+              30 ngày
+            </button>
+            <button
+              onClick={() => setPeriod("12m")}
+              className={`px-3 py-1.5 text-sm rounded-md border ${period === "12m" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-700 border-slate-200"}`}
+            >
+              12 tháng
+            </button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div className="p-4 rounded-lg border bg-slate-50">
+              <p className="text-xs text-muted-foreground">Doanh thu trong kỳ</p>
+              <p className="text-2xl font-bold text-green-600">{stats.periodRevenue.toLocaleString('vi-VN')}đ</p>
+            </div>
+            <div className="p-4 rounded-lg border bg-slate-50">
+              <p className="text-xs text-muted-foreground">Số đơn trong kỳ</p>
+              <p className="text-2xl font-bold text-slate-900">{stats.periodOrders}</p>
+            </div>
+          </div>
+
+          {stats.revenueByTime.length > 0 ? (
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart data={stats.revenueByTime}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${Number(value / 1000).toFixed(0)}k`}
+                />
+                <Tooltip
+                  formatter={(value: any) => `${Number(value).toLocaleString('vi-VN')}đ`}
+                  labelFormatter={(label) => `Mốc: ${label}`}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Line type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={3} dot={false} name="Doanh thu" />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[320px] flex items-center justify-center text-muted-foreground">Chưa có dữ liệu doanh thu trong kỳ</div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* KHU VỰC CHIA 2 CỘT: BIỂU ĐỒ & BẢNG ĐƠN HÀNG */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
